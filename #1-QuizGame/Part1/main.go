@@ -48,6 +48,23 @@ func parseLines(lines [][]string) ([]quiz, error) {
 	return ret, nil
 }
 
+// getQuizFromCSV function do the same thing with parseProblemCsv()
+// but with a better implementation: it seperate the csv parsing and 
+// quiz slice.
+func getQuizFromCSV(fname string) ([]quiz, error) {
+	lines, err := parseCSV(fname)
+	if err != nil {
+		exit(err.Error())
+	}
+
+	quizs, err := parseLines(lines)
+	if err != nil {
+		exit(err.Error())
+	}
+
+	return quizs, nil
+}
+
 // parseProblemCsv function read all the problems from file 'fp',
 // which should located at current working directory.
 // Bad practice: the csv parsing is mixed with quiz slice. If problems is 
@@ -128,7 +145,8 @@ func main() {
 	csvFile := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
 	flag.Parse()
 
-	quizs, err := parseProblemCsv(*csvFile)
+	// quizs, err := parseProblemCsv(*csvFile)
+	quizs, err := getQuizFromCSV(*csvFile)
 	if err != nil {
 		exit(err.Error())
 	}
