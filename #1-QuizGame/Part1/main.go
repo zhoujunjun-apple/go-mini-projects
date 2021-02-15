@@ -83,18 +83,22 @@ func quizMain(qs []quiz) error {
 	return nil
 }
 
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
+}
+
 func main() {
 	csvFile := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
 	flag.Parse()
 
 	quizs, err := parseProblemCsv(*csvFile)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		exit(err.Error())
 	}
 
 	err = quizMain(quizs)
 	if err != nil {
-		fmt.Println(err.Error())
+		exit(err.Error())
 	}
 }
