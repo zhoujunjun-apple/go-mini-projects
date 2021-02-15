@@ -27,6 +27,7 @@ func parseCSV(fname string) ([][]string, error) {
 	return r.ReadAll()
 }
 
+// parseLines function convert general [][]string to []problem 
 func parseLines(lines [][]string) ([]problem, error) {
 	ret := make([]problem, len(lines)) // we already know the length of quiz slice
 
@@ -44,6 +45,7 @@ func parseLines(lines [][]string) ([]problem, error) {
 	return ret, nil
 }
 
+// hint function give hint to start this quiz
 func hint(limit int) {
 	fmt.Printf("You have %d seconds to finish this quiz, press [Y] to start: ", limit)
 
@@ -57,6 +59,7 @@ func hint(limit int) {
 	}
 }
 
+// startQuiz function is the main function to start quizing
 func startQuiz(pbs []problem, limit int) {
 	hint(limit)
 	fmt.Println("quiz is started ...")
@@ -69,7 +72,7 @@ func startQuiz(pbs []problem, limit int) {
 	t := time.NewTimer(time.Duration(limit) * time.Second)
 	for getout {
 		select {
-		case ret := <-c:
+		case ret := <-c: // collect check result
 			if ret >= 0 {
 				correct += int(ret)
 			} else {
@@ -78,7 +81,7 @@ func startQuiz(pbs []problem, limit int) {
 				getout = false  
 				// can not use break, since its only work for select, not for 'for' loop
 			}
-		case <-t.C:
+		case <-t.C: // the global quiz timer
 			// quiz time is expired
 			fmt.Println("\ntime is up!")
 			getout = false
@@ -88,6 +91,8 @@ func startQuiz(pbs []problem, limit int) {
 	fmt.Printf("scored %d out of %d\n", correct, len(pbs))
 }
 
+// quizRound function ask each question in quizs, and put the 
+// check result into 'out' channel
 func quizRound(quizs []problem, out chan<- int8) {
 	var ans string
 	for i, q := range quizs {
