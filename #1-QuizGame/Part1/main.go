@@ -16,6 +16,21 @@ type quiz struct {
 	answer int
 }
 
+// parseCSV function read from csv file(fname) and convert the records into [][]string
+func parseCSV(fname string) ([][]string, error) {
+	f, err := os.Open(filepath.Join(".", fname))
+	defer f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Error occured when opening file %s : %s", fname, err.Error())
+	}
+
+	r := csv.NewReader(f)
+	return r.ReadAll()
+}
+
+// parseLines function convert problem lines into quiz slice.
+// This is a general convert function. Any problem file format
+// should first convert to [][]string then use this function.
 func parseLines(lines [][]string) ([]quiz, error) {
 	ret := make([]quiz, len(lines)) // we already know the length of quiz slice
 
@@ -35,6 +50,9 @@ func parseLines(lines [][]string) ([]quiz, error) {
 
 // parseProblemCsv function read all the problems from file 'fp',
 // which should located at current working directory.
+// Bad practice: the csv parsing is mixed with quiz slice. If problems is 
+// saved as another format, then another 'huge' function parseProblemXxx need
+// to be written.
 func parseProblemCsv(fp string) ([]quiz, error) {
 	f, err := os.Open(filepath.Join(".", fp))
 	defer f.Close()
