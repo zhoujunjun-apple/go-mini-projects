@@ -44,7 +44,7 @@ func parseLines(lines [][]string) ([]problem, error) {
 	return ret, nil
 }
 
-func startQuiz(pbs []problem, limit int) {
+func hint(limit int) {
 	fmt.Printf("You have %d seconds to finish this quiz, press [Y] to start: ", limit)
 
 	var s string
@@ -55,7 +55,10 @@ func startQuiz(pbs []problem, limit int) {
 		}
 		fmt.Printf("press [Y] to start: ")
 	}
+}
 
+func startQuiz(pbs []problem, limit int) {
+	hint(limit)
 	fmt.Println("quiz is started ...")
 
 	c := make(chan int8)
@@ -89,10 +92,9 @@ func quizRound(quizs []problem, out chan<- int8) {
 	var ans string
 	for i, q := range quizs {
 		fmt.Printf("Problem #%d: %s = ", i+1, q.qs)
-
-		fmt.Scanln(&ans)
-
+		fmt.Scanln(&ans) // can not put this statement ahead since it will block
 		ansi, _ := strconv.Atoi(ans)
+
 		if ansi == q.answer {
 			out <- 1 // 1 is right
 		} else {
