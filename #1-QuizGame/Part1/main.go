@@ -19,10 +19,10 @@ type quiz struct {
 // parseCSV function read from csv file(fname) and convert the records into [][]string
 func parseCSV(fname string) ([][]string, error) {
 	f, err := os.Open(filepath.Join(".", fname))
-	defer f.Close()
 	if err != nil {
 		return nil, fmt.Errorf("Error occured when opening file %s : %s", fname, err.Error())
 	}
+	defer f.Close()
 
 	r := csv.NewReader(f)
 	return r.ReadAll()
