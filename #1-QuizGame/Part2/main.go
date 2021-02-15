@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -16,6 +17,20 @@ type problem struct {
 	answer int
 }
 
+// ask function show the current problem and check the result
+func (pb *problem) ask(timeout time.Duration, ac <-chan string) bool {
+	fmt.Printf("Problem: %s = ", pb.qs)
+
+	select {
+	case ans := <-ac:
+		ansi, _ := strconv.Atoi(ans)
+		return ansi == pb.answer
+	case <-time.After(timeout):
+		fmt.Println("this question runs out of time")
+		return false
+	}
+}
+
 func parseCSV(fname string) ([][]string, error) {
 	f, err := os.Open(filepath.Join(".", fname))
 	if err != nil {
@@ -27,7 +42,7 @@ func parseCSV(fname string) ([][]string, error) {
 	return r.ReadAll()
 }
 
-// parseLines function convert general [][]string to []problem 
+// parseLines function convert general [][]string to []problem
 func parseLines(lines [][]string) ([]problem, error) {
 	ret := make([]problem, len(lines)) // we already know the length of quiz slice
 
@@ -78,7 +93,7 @@ func startQuiz(pbs []problem, limit int) {
 			} else {
 				// quiz is finished
 				fmt.Println("\nYou've finished all the problems!")
-				getout = false  
+				getout = false
 				// can not use break, since its only work for select, not for 'for' loop
 			}
 		case <-t.C: // the global quiz timer
@@ -91,7 +106,7 @@ func startQuiz(pbs []problem, limit int) {
 	fmt.Printf("scored %d out of %d\n", correct, len(pbs))
 }
 
-// quizRound function ask each question in quizs, and put the 
+// quizRound function ask each question in quizs, and put the
 // check result into 'out' channel
 func quizRound(quizs []problem, out chan<- int8) {
 	var ans string
@@ -129,9 +144,39 @@ func quiz(bps []problem, limit int, split bool) {
 	}
 }
 
-// averageQuiz function give each 'problem' in bps 'limit' seconds
-func averageQuiz(bps []problem, limit int) {
+// averageQuiz function give each 'problem' 'limit' seconds
+func averageQuiz(pbs []problem, limit int) {
 	hint(fmt.Sprintf("You have %d seconds to solve each problem, press [Y] to start: ", limit))
+
+	answerChan := make(chan string)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(limit*len(pbs))*time.Second)
+
+	go getUserInput(ctx, answerChan)
+
+	correct := 0
+	for _, q := range pbs {
+		if q.ask(time.Duration(limit)*time.Second, answerChan) {
+			correct++
+		}
+	}
+
+	cancel()
+	fmt.Printf("scored %d out of %d\n", correct, len(pbs))
+}
+
+func getUserInput(ctx context.Context, ac chan<- string) {
+	var ans string
+	for {
+		select {
+		case <-ctx.Done():
+			close(ac)
+			return
+		default:
+			fmt.Scanln(&ans)
+			ac <- ans
+			ans = ""
+		}
+	}
 }
 
 func exit(msg string) {
