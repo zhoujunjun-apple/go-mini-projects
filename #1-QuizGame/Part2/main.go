@@ -109,6 +109,30 @@ func quizRound(quizs []problem, out chan<- int8) {
 	out <- -1 // -1 is the end of quiz
 }
 
+// splitTime function split 'limit' time into 'n' part in averate
+func splitTime(limit, n int) int {
+	var ret int
+	ret = limit / n
+	if ret < 2 { // should not less than 2
+		ret = 2
+	}
+	return ret
+}
+
+func quiz(bps []problem, limit int, split bool) {
+	if split {
+		timeout := splitTime(limit, len(bps))
+		averageQuiz(bps, timeout)
+	} else {
+		startQuiz(bps, limit)
+	}
+}
+
+// averageQuiz function give each 'problem' in bps 'limit' seconds
+func averageQuiz(bps []problem, limit int) {
+	fmt.Printf("You have %d seconds to solve each problem, good luck !\n", limit)
+}
+
 func exit(msg string) {
 	fmt.Println(msg)
 	os.Exit(1)
@@ -117,6 +141,7 @@ func exit(msg string) {
 func main() {
 	fileName := flag.String("csv", "problems.csv", "csv file")
 	timeLimit := flag.Int("limit", 30, "time limit")
+	split := flag.Bool("split", false, "split the 'limit' time in average according to the number of problems (default false)")
 	flag.Parse()
 
 	lines, err := parseCSV(*fileName)
@@ -129,5 +154,5 @@ func main() {
 		exit(err.Error())
 	}
 
-	startQuiz(allProblems, *timeLimit)
+	quiz(allProblems, *timeLimit, *split)
 }
