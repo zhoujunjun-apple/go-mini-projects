@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type quiz struct {
@@ -37,7 +38,7 @@ func parseProblemCsv(fp string) ([]quiz, error) {
 			return nil, err
 		}
 
-		ans, err := strconv.Atoi(record[1])
+		ans, err := strconv.Atoi(strings.TrimSpace(record[1]))
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +60,7 @@ func quizMain(qs []quiz) error {
 		return fmt.Errorf("no valid problems found")
 	}
 
-	rn := 0
+	correct := 0
 	for i := 1; i <= n; i++ {
 		q := qs[i-1]
 
@@ -75,11 +76,11 @@ func quizMain(qs []quiz) error {
 		}
 
 		if ansi == q.answer {
-			rn++
+			correct++
 		}
 	}
 
-	fmt.Printf("You scored %d out of %d.\n", rn, n)
+	fmt.Printf("You scored %d out of %d.\n", correct, n)
 	return nil
 }
 
