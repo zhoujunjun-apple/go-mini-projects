@@ -46,8 +46,8 @@ func parseLines(lines [][]string) ([]problem, error) {
 }
 
 // hint function give hint to start this quiz
-func hint(limit int) {
-	fmt.Printf("You have %d seconds to finish this quiz, press [Y] to start: ", limit)
+func hint(msg string) {
+	fmt.Printf(msg)
 
 	var s string
 	for {
@@ -61,7 +61,7 @@ func hint(limit int) {
 
 // startQuiz function is the main function to start quizing
 func startQuiz(pbs []problem, limit int) {
-	hint(limit)
+	hint(fmt.Sprintf("You have %d seconds to finish the full quiz, press [Y] to start: ", limit))
 	fmt.Println("quiz is started ...")
 
 	c := make(chan int8)
@@ -119,6 +119,7 @@ func splitTime(limit, n int) int {
 	return ret
 }
 
+// quiz function is the main entry
 func quiz(bps []problem, limit int, split bool) {
 	if split {
 		timeout := splitTime(limit, len(bps))
@@ -130,7 +131,7 @@ func quiz(bps []problem, limit int, split bool) {
 
 // averageQuiz function give each 'problem' in bps 'limit' seconds
 func averageQuiz(bps []problem, limit int) {
-	fmt.Printf("You have %d seconds to solve each problem, good luck !\n", limit)
+	hint(fmt.Sprintf("You have %d seconds to solve each problem, press [Y] to start: ", limit))
 }
 
 func exit(msg string) {
