@@ -84,7 +84,8 @@ func quizMain(qs []quiz) error {
 }
 
 func main() {
-	csvFile := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer' (default 'problems.csv')")
+	csvFile := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	flag.Parse()
 
 	quizs, err := parseProblemCsv(*csvFile)
 	if err != nil {
