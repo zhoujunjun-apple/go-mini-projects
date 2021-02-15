@@ -16,6 +16,23 @@ type quiz struct {
 	answer int
 }
 
+func parseLines(lines [][]string) ([]quiz, error) {
+	ret := make([]quiz, len(lines)) // we already know the length of quiz slice
+
+	for i, line := range lines {
+		ans, err := strconv.Atoi(strings.TrimSpace(line[1]))
+		if err != nil {
+			return nil, err
+		}
+		
+		ret[i] = quiz{
+			qs: line[0],
+			answer: ans,
+		}
+	}
+	return ret, nil
+}
+
 // parseProblemCsv function read all the problems from file 'fp',
 // which should located at current working directory.
 func parseProblemCsv(fp string) ([]quiz, error) {
