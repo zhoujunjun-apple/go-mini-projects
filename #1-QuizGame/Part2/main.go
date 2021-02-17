@@ -88,9 +88,9 @@ func startQuiz(pbs []problem, limit int) {
 	for getout {
 		select {
 		case ret := <-c: // collect check result
-			if ret >= 0 {
-				correct += int(ret)
-			} else {
+			if ret > 0 {
+				correct += int(ret - 1)
+			} else { // channel c is closed
 				// quiz is finished
 				fmt.Println("\nYou've finished all the problems!")
 				getout = false
@@ -116,12 +116,12 @@ func quizRound(quizs []problem, out chan<- int8) {
 		ansi, _ := strconv.Atoi(ans)
 
 		if ansi == q.answer {
-			out <- 1 // 1 is right
+			out <- 2 // 2 represents right answer
 		} else {
-			out <- 0 // 0 is wrong or empty answer
+			out <- 1 // 1 represents wrong or empty answer
 		}
 	}
-	out <- -1 // -1 is the end of quiz
+	close(out)
 }
 
 // splitTime function split 'limit' time into 'n' part in averate
