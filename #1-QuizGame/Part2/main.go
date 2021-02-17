@@ -79,23 +79,24 @@ func startQuiz(pbs []problem, limit int) {
 	hint(fmt.Sprintf("You have %d seconds to finish the full quiz, press [Y] to start: ", limit))
 	fmt.Println("quiz is started ...")
 
-	c := make(chan int8)
-	go quizRound(pbs, c)
+	c := make(chan bool)  // transport answer checking result
+	stop := make(chan bool)  // indicate if all questions have been asked
+	go quizRound(pbs, c, stop)
 
 	getout := true
 	correct := 0
 	t := time.NewTimer(time.Duration(limit) * time.Second)
+
 	for getout {
 		select {
 		case ret := <-c: // collect check result
-			if ret > 0 {
-				correct += int(ret - 1)
-			} else { // channel c is closed
-				// quiz is finished
-				fmt.Println("\nYou've finished all the problems!")
-				getout = false
-				// can not use break, since its only work for select, not for 'for' loop
+			if ret {
+				correct++
 			}
+		case <-stop: // all questions have been asked
+			fmt.Println("\nYou've finished all the problems!")
+			getout = false
+			// can not use break, since its only work for select, not for 'for' loop
 		case <-t.C: // the global quiz timer
 			// quiz time is expired
 			fmt.Println("\ntime is up!")
@@ -107,21 +108,33 @@ func startQuiz(pbs []problem, limit int) {
 }
 
 // quizRound function ask each question in quizs, and put the
-// check result into 'out' channel
-func quizRound(quizs []problem, out chan<- int8) {
+// check result into 'out' channel. When all the questions have
+// been asked, put 'true' into 'end' channel.
+func quizRound(quizs []problem, out chan<- bool, end chan<- bool) {
 	var ans string
 	for i, q := range quizs {
+		// ask the problem ans collect answer
 		fmt.Printf("Problem #%d: %s = ", i+1, q.qs)
 		fmt.Scanln(&ans) // can not put this statement ahead since it will block
-		ansi, _ := strconv.Atoi(ans)
+		
+		// convert the answer to integer
+		ansi, err := strconv.Atoi(ans)
+		if err != nil {
+			out <- false
+		}
 
+		// check the result
 		if ansi == q.answer {
-			out <- 2 // 2 represents right answer
+			out <- true
 		} else {
-			out <- 1 // 1 represents wrong or empty answer
+			out <- false
 		}
 	}
 	close(out)
+
+	// indicate that all problems have been asked
+	end <- true
+	close(end)
 }
 
 // splitTime function split 'limit' time into 'n' part in averate
