@@ -90,8 +90,7 @@ func startQuiz(pbs []problem, limit int) {
 	fmt.Println("quiz is started ...")
 
 	c := make(chan bool)    // transport answer checking result
-	stop := make(chan bool) // indicate if all questions have been asked
-	go quizRound(pbs, c, stop)
+	go quizRound(pbs, c)
 
 	getout := true
 	correct := 0
@@ -99,14 +98,16 @@ func startQuiz(pbs []problem, limit int) {
 
 	for getout {
 		select {
-		case ret := <-c: // collect check result
-			if ret {
-				correct++
-			}
-		case <-stop: // all questions have been asked
-			fmt.Println("\nYou've finished all the problems!")
-			getout = false
-			// can not use break, since its only work for select, not for 'for' loop
+		case ret, ok := <-c: // collect check result
+			if ok {
+				if ret {
+					correct++
+				}
+			} else { // channel c is closed
+				fmt.Println("\nYou've finished all the problems!")
+				getout = false
+				// can not use break, since its only work for select, not for 'for' loop
+			}			
 		case <-t.C: // the global quiz timer
 			// quiz time is expired
 			fmt.Println("\ntime is up!")
@@ -118,9 +119,8 @@ func startQuiz(pbs []problem, limit int) {
 }
 
 // quizRound function ask each question in quizs, and put the
-// check result into 'out' channel. When all the questions have
-// been asked, put 'true' into 'end' channel.
-func quizRound(quizs []problem, out chan<- bool, end chan<- bool) {
+// check result into 'out' channel. 
+func quizRound(quizs []problem, out chan<- bool) {
 	var ans string
 	for i, q := range quizs {
 		// ask the problem ans collect answer
@@ -131,6 +131,7 @@ func quizRound(quizs []problem, out chan<- bool, end chan<- bool) {
 		ansi, err := strconv.Atoi(ans)
 		if err != nil {
 			out <- false
+			continue  // no need more comparision
 		}
 
 		// check the result
@@ -141,10 +142,6 @@ func quizRound(quizs []problem, out chan<- bool, end chan<- bool) {
 		}
 	}
 	close(out)
-
-	// indicate that all problems have been asked
-	end <- true
-	close(end)
 }
 
 // splitTime function split 'limit' time into 'n' part in averate
