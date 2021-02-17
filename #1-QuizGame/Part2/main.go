@@ -22,11 +22,15 @@ func (pb *problem) ask(timeout time.Duration, ac <-chan string) bool {
 	fmt.Printf("Problem: %s = ", pb.qs)
 
 	select {
-	case ans := <-ac:
-		ansi, _ := strconv.Atoi(ans)
+	case ans := <-ac:  // get answer for current problem 'pb'
+		ansi, err := strconv.Atoi(ans)
+		if err != nil {
+			return false
+		}
+
 		return ansi == pb.answer
-	case <-time.After(timeout):
-		fmt.Println("this question runs out of time")
+	case <-time.After(timeout):  // each problem get 'timeout' seconds to answer
+		fmt.Println(" <-this question runs out of time")
 		return false
 	}
 }
@@ -160,10 +164,12 @@ func quiz(bps []problem, limit int, split bool) {
 // averageQuiz function give each 'problem' 'limit' seconds
 func averageQuiz(pbs []problem, limit int) {
 	hint(fmt.Sprintf("You have %d seconds to solve each problem, press [Y] to start: ", limit))
+	
+	fullTime := time.Duration(limit*len(pbs))*time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), fullTime)
+	// after fullTime seconds, cancel() is called automatically
 
 	answerChan := make(chan string)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(limit*len(pbs))*time.Second)
-
 	go getUserInput(ctx, answerChan)
 
 	correct := 0
@@ -173,7 +179,7 @@ func averageQuiz(pbs []problem, limit int) {
 		}
 	}
 
-	cancel()
+	cancel() // tell the getUserInput goroutinue to stop
 	fmt.Printf("scored %d out of %d\n", correct, len(pbs))
 }
 
@@ -181,7 +187,7 @@ func getUserInput(ctx context.Context, ac chan<- string) {
 	var ans string
 	for {
 		select {
-		case <-ctx.Done():
+		case <-ctx.Done():  // cancel() is called. stop collect user input
 			close(ac)
 			return
 		default:
