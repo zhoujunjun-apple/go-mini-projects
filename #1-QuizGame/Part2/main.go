@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -22,20 +23,24 @@ func (pb *problem) ask(timeout time.Duration, ac <-chan string) bool {
 	fmt.Printf("Problem: %s = ", pb.qs)
 
 	select {
-	case ans := <-ac:  // get answer for current problem 'pb'
+	case ans := <-ac: // get answer for current problem 'pb'
 		ansi, err := strconv.Atoi(ans)
 		if err != nil {
 			return false
 		}
 
 		return ansi == pb.answer
-	case <-time.After(timeout):  // each problem get 'timeout' seconds to answer
+	case <-time.After(timeout): // each problem get 'timeout' seconds to answer
 		fmt.Println(" <-this question runs out of time")
 		return false
 	}
 }
 
 func parseCSV(fname string) ([][]string, error) {
+	if !strings.HasSuffix(fname, "csv") {
+		log.Fatalf("provided problems file '%s' is not a CSV file\n", fname)
+	}
+	
 	f, err := os.Open(filepath.Join(".", fname))
 	if err != nil {
 		return nil, fmt.Errorf("Error occured when opening file %s : %s", fname, err.Error())
@@ -83,8 +88,8 @@ func startQuiz(pbs []problem, limit int) {
 	hint(fmt.Sprintf("You have %d seconds to finish the full quiz, press [Y] to start: ", limit))
 	fmt.Println("quiz is started ...")
 
-	c := make(chan bool)  // transport answer checking result
-	stop := make(chan bool)  // indicate if all questions have been asked
+	c := make(chan bool)    // transport answer checking result
+	stop := make(chan bool) // indicate if all questions have been asked
 	go quizRound(pbs, c, stop)
 
 	getout := true
@@ -120,7 +125,7 @@ func quizRound(quizs []problem, out chan<- bool, end chan<- bool) {
 		// ask the problem ans collect answer
 		fmt.Printf("Problem #%d: %s = ", i+1, q.qs)
 		fmt.Scanln(&ans) // can not put this statement ahead since it will block
-		
+
 		// convert the answer to integer
 		ansi, err := strconv.Atoi(ans)
 		if err != nil {
@@ -164,8 +169,8 @@ func quiz(bps []problem, limit int, split bool) {
 // averageQuiz function give each 'problem' 'limit' seconds
 func averageQuiz(pbs []problem, limit int) {
 	hint(fmt.Sprintf("You have %d seconds to solve each problem, press [Y] to start: ", limit))
-	
-	fullTime := time.Duration(limit*len(pbs))*time.Second
+
+	fullTime := time.Duration(limit*len(pbs)) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), fullTime)
 	// after fullTime seconds, cancel() is called automatically
 
@@ -187,7 +192,7 @@ func getUserInput(ctx context.Context, ac chan<- string) {
 	var ans string
 	for {
 		select {
-		case <-ctx.Done():  // cancel() is called. stop collect user input
+		case <-ctx.Done(): // cancel() is called. stop collect user input
 			close(ac)
 			return
 		default:
@@ -203,10 +208,13 @@ func exit(msg string) {
 	os.Exit(1)
 }
 
+var (
+	fileName  = flag.String("csv", "problems.csv", "csv file")
+	timeLimit = flag.Int("limit", 30, "time limit")
+	split     = flag.Bool("split", false, "split the 'limit' time in average according to the number of problems (default false)")
+)
+
 func main() {
-	fileName := flag.String("csv", "problems.csv", "csv file")
-	timeLimit := flag.Int("limit", 30, "time limit")
-	split := flag.Bool("split", false, "split the 'limit' time in average according to the number of problems (default false)")
 	flag.Parse()
 
 	lines, err := parseCSV(*fileName)
