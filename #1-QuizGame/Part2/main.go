@@ -239,6 +239,9 @@ func main() {
 
 	if *shuffle {
 	 	shuffleProblems(allProblems)
+		 // Another way to do shuffle as follows:
+		 // rand.Seed(time.Now().Unix())
+		 // rand.Shuffle(len(allProblems), func(i, j int) {allProblems[i], allProblems[j] = allProblems[j], allProblems[i] })
 	}
 
 	quiz(allProblems, *timeLimit, *split)
