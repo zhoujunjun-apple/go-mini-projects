@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -40,7 +41,7 @@ func parseCSV(fname string) ([][]string, error) {
 	if !strings.HasSuffix(fname, "csv") {
 		log.Fatalf("provided problems file '%s' is not a CSV file\n", fname)
 	}
-	
+
 	f, err := os.Open(filepath.Join(".", fname))
 	if err != nil {
 		return nil, fmt.Errorf("Error occured when opening file %s : %s", fname, err.Error())
@@ -203,6 +204,17 @@ func getUserInput(ctx context.Context, ac chan<- string) {
 	}
 }
 
+// shuffleProblems function shuffle the problems
+func shuffleProblems(pbs []problem) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	for i := 0; i < len(pbs); i++ {
+		j := r.Intn(len(pbs))
+
+		pbi, pbj := pbs[i], pbs[j]
+		pbs[i], pbs[j] = pbj, pbi
+	}
+}
+
 func exit(msg string) {
 	fmt.Println(msg)
 	os.Exit(1)
@@ -212,6 +224,7 @@ var (
 	fileName  = flag.String("csv", "problems.csv", "csv file")
 	timeLimit = flag.Int("limit", 30, "time limit")
 	split     = flag.Bool("split", false, "split the 'limit' time in average according to the number of problems (default false)")
+	shuffle   = flag.Bool("shuffle", false, "shuffle the problem or not (default false)")
 )
 
 func main() {
@@ -225,6 +238,10 @@ func main() {
 	allProblems, err := parseLines(lines)
 	if err != nil {
 		exit(err.Error())
+	}
+
+	if *shuffle {
+	 	shuffleProblems(allProblems)
 	}
 
 	quiz(allProblems, *timeLimit, *split)
