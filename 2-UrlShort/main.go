@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -61,11 +62,22 @@ func parseYAML(yml []byte) (*ptus, error) {
 	return &pathUrls, nil
 }
 
-// buildMap function convert parsed path-to-urls into a map
-func buildMap(parsedYAML *ptus) *map[string]string {
-	ret := make(map[string]string, len(parsedYAML.ps))
+// parseJSON function parse configuraion JSON file into ptus objects
+func parseJSON(jsondata *[]byte) (*ptus, error) {
+	ptusObj := new(ptus)
+	err := json.Unmarshal(*jsondata, &ptusObj.ps)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, p := range parsedYAML.ps {
+	return ptusObj, nil
+}
+
+// buildMap function convert parsed path-to-urls into a map
+func buildMap(parsed *ptus) *map[string]string {
+	ret := make(map[string]string, len(parsed.ps))
+
+	for _, p := range parsed.ps {
 		ret[p.Path] = p.URL
 	}
 
@@ -83,8 +95,8 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	return MapHandler(pathMap, fallback), nil
 }
 
-// readYAML function read YAML configuration from file 'filepath'
-func readYAML(filepath string) (*[]byte, error) {
+// readByte function read configuration from file 'filepath'
+func readByte(filepath string) (*[]byte, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -95,8 +107,26 @@ func readYAML(filepath string) (*[]byte, error) {
 	return &ret, err
 }
 
+// JSONHandler function build request handler according to given JSON configuration
+func JSONHandler(jsondata *[]byte, fallback http.Handler) (http.HandlerFunc, error) {
+	parsedJSON, err := parseJSON(jsondata)
+	if err != nil {
+		return nil, err
+	}
+
+	pathMap := buildMap(parsedJSON)
+	return MapHandler(pathMap, fallback), nil
+}
+
+func exit(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 var (
-	yamlfile = flag.String("yaml", "path_to_urls.yaml", "the configuration YAML file path")
+	yamlfile = flag.String("yaml", "", "the configuration YAML file path")
+	jsonfile = flag.String("json", "", "the configuration JSON file path with higher priority than 'yaml' flag")
 )
 
 func main() {
@@ -104,19 +134,28 @@ func main() {
 
 	mux := defaultMux()
 
-	yamlByte, err := readYAML(*yamlfile)
-	if err != nil {
-		panic(err)
-	}
+	var handler http.HandlerFunc
+	if *jsonfile != "" {
+		cfg, err := readByte(*jsonfile)
+		exit(err)
 
-	yamlhandler, err := YAMLHandler(*yamlByte, mux)
-	if err != nil {
-		panic(err)
-	}
+		jhandler, err := JSONHandler(cfg, mux)
+		exit(err)
 
+		handler = jhandler
+	} else if *yamlfile != "" {
+		cfg, err := readByte(*yamlfile)
+		exit(err)
+
+		yhandler, err := YAMLHandler(*cfg, mux)
+		exit(err)
+
+		handler = yhandler
+	} else {
+		panic(fmt.Errorf("one of 'yaml' or 'json' flag must be specified. input -h or --help to check all the flags"))
+	}
+	
 	fmt.Println("starting the server on :8080")
-	err = http.ListenAndServe(":8080", yamlhandler)
-	if err != nil {
-		panic(err)
-	}
+	err := http.ListenAndServe(":8080", handler)
+	exit(err)
 }

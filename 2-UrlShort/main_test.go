@@ -33,3 +33,34 @@ func TestBuildMap(t *testing.T) {
 		t.Logf("key: %s, value: %s\n", k, v)
 	}
 }
+
+var jsondata = `
+[
+    {
+        "path": "/urlshort",
+        "url": "https://github.com/gophercises/urlshort"
+    },
+    {
+        "path": "/urlshort-final",
+        "url": "https://github.com/gophercises/urlshort/tree/solution"
+    },
+    {
+        "path": "/urlshort-godoc",
+        "url": "https://godoc.org/github.com/gophercises/urlshort"
+    },
+    {
+        "path": "/yaml-godoc",
+        "url": "https://godoc.org/gopkg.in/yaml.v2"
+    }
+]
+`
+
+func TestParseJSON(t *testing.T) {
+	jsonbyte := []byte(jsondata)
+	p, err := parseJSON(&jsonbyte)
+	if err != nil {
+		t.Errorf(err.Error())
+	} else {
+		t.Log(p)
+	}
+}
