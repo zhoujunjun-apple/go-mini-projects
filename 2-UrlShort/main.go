@@ -52,9 +52,9 @@ func MapHandler(pathsToUrls *map[string]string, fallback http.Handler) http.Hand
 }
 
 // parseYAML function parse configuration YAML file into ptus objects
-func parseYAML(yml []byte) (*ptus, error) {
+func parseYAML(yml *[]byte) (*ptus, error) {
 	pathUrls := ptus{}
-	err := yaml.Unmarshal(yml, &pathUrls.ps)
+	err := yaml.Unmarshal(*yml, &pathUrls.ps)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func buildMap(parsed *ptus) *map[string]string {
 }
 
 // YAMLHandler function build request handler according to given YAML configuration
-func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
+func YAMLHandler(yml *[]byte, fallback http.Handler) (http.HandlerFunc, error) {
 	parsedYAML, err := parseYAML(yml)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func main() {
 		cfg, err := readByte(*yamlfile)
 		exit(err)
 
-		yhandler, err := YAMLHandler(*cfg, mux)
+		yhandler, err := YAMLHandler(cfg, mux)
 		exit(err)
 
 		handler = yhandler

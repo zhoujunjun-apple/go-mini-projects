@@ -12,7 +12,8 @@ var yml = `
   `
 
 func TestParseYAML(t *testing.T) {
-	ret, err := parseYAML([]byte(yml))
+	yamlbyte := []byte(yml)
+	ret, err := parseYAML(&yamlbyte)
 	if err != nil {
 		t.Errorf("parse yaml error: %s\n", err.Error())
 	} else {
@@ -21,7 +22,8 @@ func TestParseYAML(t *testing.T) {
 }
 
 func TestBuildMap(t *testing.T) {
-	parsed, err := parseYAML([]byte(yml))
+	yamlbyte := []byte(yml)
+	parsed, err := parseYAML(&yamlbyte)
 	if err != nil {
 		t.Errorf("parse yaml error: %s\n", err.Error())
 		return
