@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -47,7 +50,7 @@ func MapHandler(pathsToUrls *map[string]string, fallback http.Handler) http.Hand
 	return ret
 }
 
-// parseYAML function parse configuration YAML file into ptus objects 
+// parseYAML function parse configuration YAML file into ptus objects
 func parseYAML(yml []byte) (*ptus, error) {
 	pathUrls := ptus{}
 	err := yaml.Unmarshal(yml, &pathUrls.ps)
@@ -80,22 +83,33 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	return MapHandler(pathMap, fallback), nil
 }
 
+// readYAML function read YAML configuration from file 'filepath'
+func readYAML(filepath string) (*[]byte, error) {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	ret, err := ioutil.ReadAll(f)
+	return &ret, err
+}
+
+var (
+	yamlfile = flag.String("yaml", "path_to_urls.yaml", "the configuration YAML file path")
+)
+
 func main() {
+	flag.Parse()
+
 	mux := defaultMux()
 
-	pathsToUrls := map[string]string{
-		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
-		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
+	yamlByte, err := readYAML(*yamlfile)
+	if err != nil {
+		panic(err)
 	}
-	mapHandler := MapHandler(&pathsToUrls, mux)
 
-	yml := `
-- path: /urlshort
-  url: https://github.com/gophercises/urlshort
-- path: /urlshort-final
-  url: https://github.com/gophercises/urlshort/tree/solution
-  `
-	yamlhandler, err := YAMLHandler([]byte(yml), mapHandler)
+	yamlhandler, err := YAMLHandler(*yamlByte, mux)
 	if err != nil {
 		panic(err)
 	}
